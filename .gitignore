@@ -47,3 +47,18 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+
+# Node.js / React Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend-react/dist/
+frontend-react/node_modules/
+frontend-react/.env
+frontend-react/.env.local
+*.local
+
+# Keep data structure but ignore content
+!data/audit_logs/.gitkeep
+data/audit_logs/*.json
