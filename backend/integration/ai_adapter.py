@@ -7,6 +7,7 @@ import httpx
 from typing import Optional
 from schemas.ai_schema import AIAnalysisResult, BiasScores, HighlightedSpan
 from backend.config import settings
+from services.ai_engine.ai_service import AIBiasDetectionService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,14 +17,15 @@ class AIAdapter:
     """
     Adapter for communicating with Member 2's AI Service.
     
-    When Member 2's service is ready, update the analyze_bias method
-    to make real HTTP calls instead of using mock data.
+    Uses the local AI service for bias detection.
+    Can be switched to HTTP calls for microservice architecture.
     """
     
     def __init__(self):
         self.base_url = settings.AI_SERVICE_URL
         self.timeout = 30.0
-        logger.info(f"🤖 AI Adapter initialized: {self.base_url}")
+        self.ai_service = AIBiasDetectionService()
+        logger.info(f"🤖 AI Adapter initialized with local service")
     
     async def analyze_bias(
         self,
@@ -41,74 +43,26 @@ class AIAdapter:
             
         Returns:
             AIAnalysisResult with bias scores and explanations
-            
-        Raises:
-            httpx.HTTPError: If the AI service is unreachable
-        
-        TODO: Replace mock implementation with real HTTP call when
-        Member 2's service is ready. Uncomment the code below.
         """
         logger.info(f"🤖 AI Adapter: Analyzing content for {analysis_id}")
         
-        # MOCK IMPLEMENTATION - Replace with real HTTP call
-        # When Member 2's service is ready, uncomment this:
-        """
-        payload = {
-            "content": content,
-            "analysis_id": analysis_id
-        }
-        if language:
-            payload["language"] = language
-        
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(
-                    f"{self.base_url}/analyze",
-                    json=payload
-                )
-                response.raise_for_status()
-                result = AIAnalysisResult(**response.json())
-                
-                logger.info(
-                    f"✅ AI analysis completed for {analysis_id}: "
-                    f"overall_bias={result.bias_scores.overall:.2f}"
-                )
-                
-                return result
-                
-        except httpx.HTTPError as e:
+            # Use local AI service
+            result = self.ai_service.analyze(
+                content=content,
+                language=language or 'en'
+            )
+            
+            logger.info(
+                f"✅ AI analysis completed for {analysis_id}: "
+                f"overall_bias={result.bias_scores.overall:.2f}"
+            )
+            
+            return result
+            
+        except Exception as e:
             logger.error(f"❌ AI service error for {analysis_id}: {e}")
             raise
-        """
-        
-        # Mock response for development (DELETE THIS WHEN MEMBER 2 IS READY)
-        logger.warning("⚠️  Using MOCK AI response - replace with real service call")
-        
-        return AIAnalysisResult(
-            bias_scores=BiasScores(
-                gender_bias=0.65,
-                stereotype=0.42,
-                language_dominance=0.28,
-                overall=0.52
-            ),
-            explanations={
-                "gender_bias": "Gendered language patterns detected in the text",
-                "stereotype": "Stereotypical associations identified",
-                "language_dominance": "English-centric references found"
-            },
-            highlighted_text=[
-                HighlightedSpan(
-                    span=[0, min(10, len(content))],
-                    text=content[:10],
-                    bias_type="gender_bias",
-                    severity="medium",
-                    contribution_score=0.15
-                )
-            ],
-            language_detected=language or "en",
-            confidence=0.95,
-            model_version="mock-ai-v1.0.0"
-        )
     
     async def health_check(self) -> bool:
         """
