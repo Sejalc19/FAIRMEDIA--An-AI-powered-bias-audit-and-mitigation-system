@@ -1,4 +1,4 @@
-# 🌍 FAIRMEDIA  
+# FAIRMEDIA  
 ## AI-Powered Bias Audit & Responsible Content Ranking System  
 
 > **Reducing algorithmic bias without altering reality.**
